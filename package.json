@@ -1,0 +1,55 @@
+{
+  "name": "powerbi-seamless-migration",
+  "version": "0.1.0",
+  "description": "This project is an Azure DevOps extension for Power BI CI/CD, containing scripts for workspace cleaning, report migration, dataset updating, and more.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "mocha tests/**/*.test.js",
+    "lint": "eslint .",
+    "prettier": "prettier --check '**/*.{js,json}'",
+    "format": "prettier --write '**/*.{js,json}'",
+    "docs": "jsdoc -c jsdoc.config.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/powerbi-seamless-migration.git"
+  },
+  "keywords": [
+    "power-bi",
+    "ci",
+    "cd",
+    "azure-devops",
+    "scripts",
+    "workspace-cleaning",
+    "report-migration",
+    "dataset-updating"
+  ],
+  "author": "Upendra Jangir",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.3.4",
+    "dotenv": "^16.0.3",
+    "form-data": "^4.0.0",
+    "fs": "^0.0.1-security",
+    "qs": "^6.11.1"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "eslint": "^8.1.0",
+    "mocha": "^9.1.1",
+    "nodemon": "^2.0.14",
+    "prettier": "^2.4.1",
+    "sinon": "^11.1.0"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/powerbi-seamless-migration/issues"
+  },
+  "homepage": "https://github.com/your-username/powerbi-seamless-migration#readme"
+}
+
