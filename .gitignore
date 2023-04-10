@@ -29,6 +29,7 @@ build/
 *.code-workspace
 tmp
 .DS_Store
+temp.*
 
 
 # Byte-compiled / optimized / DLL files

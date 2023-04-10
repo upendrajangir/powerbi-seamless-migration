@@ -1,5 +1,6 @@
 const fs = require("fs");
 const axios = require("axios");
+const FormData = require("form-data");
 
 /**
  * Lists Power BI reports in a workspace.
@@ -123,7 +124,7 @@ async function exportPowerBIReport(
   } catch (error) {
     console.error(
       "Error exporting report:",
-      error.response ? JSON.stringify(error.response.data, null, 2) : error
+      error.response ? error.response.data.toString() : error
     );
     return false;
   }
@@ -131,54 +132,73 @@ async function exportPowerBIReport(
 
 /**
  * Imports a PBIX file to a Power BI workspace.
- * @param {string} accessToken - Access token for Power BI API.
- * @param {string} targetWorkspaceId - ID of the workspace to import the PBIX file into.
- * @param {string} pbixFilePath - Path to the PBIX file to be imported.
- * @param {string} datasetDisplayName - Display name for the imported dataset.
- * @returns {Promise<void>}
+ * @param {string} accessToken - The access token to authenticate with the Power BI API.
+ * @param {string} targetWorkspaceId - The ID of the target workspace.
+ * @param {string} pbixFilePath - The file path of the PBIX file to import.
  */
-async function importPbixToWorkspace(
-  accessToken,
-  targetWorkspaceId,
-  pbixFilePath,
-  datasetDisplayName
-) {
+async function importPbixToWorkspace(accessToken, targetWorkspaceId, pbixFilePath, datasetDisplayName, nameConflict) {
   try {
-    const form = new FormData();
-    form.append("file", fs.createReadStream(pbixFilePath));
+    // Import the exported report to the target workspace
+    console.log("Importing report to target workspace...");
+    const formData = new FormData();
+    const readStream = fs.createReadStream(pbixFilePath);
+    formData.append("file", readStream);
 
-    const config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: `https://api.powerbi.com/v1.0/myorg/groups/${targetWorkspaceId}/imports?datasetDisplayName=${encodeURIComponent(
-        datasetDisplayName
-      )}`,
-      headers: {
-        ...form.getHeaders(),
-        Authorization: `Bearer ${accessToken}`,
-      },
-      maxContentLength: Infinity,
-    };
-
-    const response = await axios.request(config);
-
-    console.log(
-      `PBIX file imported successfully. Import ID: ${response.data.id}`
+    const response = await axios.post(
+      `https://api.powerbi.com/v1.0/myorg/groups/${targetWorkspaceId}/imports?datasetDisplayName=${encodeURIComponent(datasetDisplayName)}&nameConflict=${nameConflict}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...formData.getHeaders(),
+        },
+      }
     );
+
+    console.log(`PBIX file imported successfully. Import ID: ${response.data.id}`);
+    return response.data;
   } catch (error) {
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
-      console.log("Error:", error.response.status, error.response.data);
+      console.log('Error:', error.response.status, error.response.data);
+      if (error.response.status === 400) {
+        console.log("Error details:", JSON.stringify(error.response.data, null, 2));
+      }
     } else if (error.request) {
       // The request was made but no response was received
-      console.log("Error: No response received from the server", error.request);
+      console.log('Error: No response received from the server', error.request);
     } else {
       // Something happened in setting up the request that triggered an Error
-      console.log("Error:", error.message);
+      console.log('Error:', error.message);
     }
   }
 }
+
+/**
+ * Deletes a report from the specified workspace.
+ * @param {string} accessToken - The access token to authenticate with the Power BI API.
+ * @param {string} workspaceId - The ID of the workspace containing the reports.
+ * @param {string} reportId - The ID of the report to delete.
+ */
+async function deleteReport(accessToken, workspaceId, reportId) {
+  // Define the API URL for the report in the specified workspace
+  const apiUrl = `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/reports/${reportId}`;
+
+  // Set the request headers with the access token
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+  };
+
+  // Send a DELETE request to the API to delete the specified report
+  try {
+    await axios.delete(apiUrl, { headers });
+    console.log(`Deleted report with ID '${reportId}'`);
+  } catch (error) {
+    console.error(`Error deleting report with ID '${reportId}':`, error.response.data);
+  }
+}
+
 
 /**
  * Deletes all reports from the specified workspace.
@@ -210,5 +230,6 @@ module.exports = {
   cloneReport,
   exportPowerBIReport,
   importPbixToWorkspace,
+  deleteReport,
   deleteAllReports,
 };

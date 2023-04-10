@@ -125,3 +125,44 @@ async function performCICD() {
 
 performCICD();
 
+
+// Todo: add following code to main block
+
+// (async () => {
+//   try {
+//     // Export the report from the source workspace
+//     console.log("Exporting report...");
+//     const exportedReportPath = `./${exportFileName}`;
+//     const exportResult = await powerBI.exportPowerBIReport(
+//       accessToken,
+//       sourceWorkspaceId,
+//       reportId,
+//       exportedReportPath
+//     );
+
+//     if (!exportResult) {
+//       console.error("Failed to export report.");
+//       return;
+//     }
+
+//     // Import the exported report to the target workspace
+//     console.log("Importing report to target workspace...");
+//     const importResult = await powerBI.importPbixToWorkspace(
+//       accessToken,
+//       targetWorkspaceId,
+//       exportedReportPath,
+//       datasetDisplayName,
+//       nameConflict
+//     );
+//     if (!importResult) {
+//       console.log("Failed to import report.");
+//       return;
+//     }
+    
+//     // Cleanup: Remove the exported report file
+//     fs.unlinkSync(exportedReportPath);
+//   } catch (error) {
+//     console.error("Error importing report:", error.response ? error.response.data : error);
+//     console.log("Failed to import report.");
+//   }
+// })();
