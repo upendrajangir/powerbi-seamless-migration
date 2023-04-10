@@ -1,168 +1,108 @@
 require("dotenv").config();
+const { fetchPowerBIAccessToken } = require("./src/modules/powerbiAuth.js");
+const {
+  getPowerBiWorkspaces,
+  createWorkspace,
+} = require("./src/modules/workspaces.js");
 const {
   listReports,
-  cloneReport,
   exportPowerBIReport,
+  importPbixToWorkspace,
 } = require("./src/modules/reports.js");
 const {
-  listDatasets,
   takeOverDataset,
   updateDatasource,
 } = require("./src/modules/datasets.js");
-const { fetchPowerBIAccessToken } = require("./src/modules/powerbiAuth.js");
 
 const clientId = process.env.AZURE_APP_ID;
 const clientSecret = process.env.AZURE_APP_SECRET;
 const tenantId = process.env.AZURE_TENANT_ID;
 const sourceWorkspaceId = process.env.SOURCE_WORKSPACE_ID;
 const targetWorkspaceId = process.env.TARGET_WORKSPACE_ID;
+const targetWorkspaceName = process.env.TARGET_WORKSPACE_NAME;
+const nameConflict = "CreateOrOverwrite";
+const targetDatasourceDetails = {
+  updateDetails: [
+    {
+      datasourceSelector: {
+        datasourceType: "Sql",
+        connectionDetails: {
+          server: "janvi1.database.windows.net",
+          database: "demo1",
+        },
+      },
+      connectionDetails: {
+        server: "janvi1.database.windows.net",
+        database: "demo1",
+      },
+    },
+  ],
+};
 
-/**
- * Clone reports in parallel with a specified batch size.
- * @param {string} accessToken - Access token for Power BI API.
- * @param {Array} reports - Array of reports to be cloned.
- * @param {number} batchSize - Number of reports to clone in parallel.
- * @returns {Promise<Array>} - Array of cloned report objects.
- */
-async function cloneReportsInParallel(accessToken, reports, batchSize = 10) {
-  let currentBatch = [];
-  const clonedReports = [];
-
-  for (const report of reports) {
-    currentBatch.push(
-      cloneReport(
-        accessToken,
-        sourceWorkspaceId,
-        report.id,
-        targetWorkspaceId,
-        report.datasetId,
-        `${report.name}`
-      )
-    );
-
-    if (currentBatch.length === batchSize) {
-      const batchResults = await Promise.all(currentBatch);
-      clonedReports.push(...batchResults);
-      currentBatch = [];
-    }
-  }
-
-  if (currentBatch.length > 0) {
-    const batchResults = await Promise.all(currentBatch);
-    clonedReports.push(...batchResults);
-  }
-
-  return clonedReports;
-}
-
-/**
- * Update data sources for all datasets.
- * @param {string} accessToken - Access token for Power BI API.
- * @param {Array} datasets - Array of datasets to update data sources.
- * @returns {Promise<Array>} - Array of updated dataset objects.
- */
-async function takeOverAndUpdateDataSources(accessToken, datasets) {
-  const updatedDatasets = await Promise.all(
-    datasets.map(async (dataset) => {
-      await takeOverDataset(accessToken, sourceWorkspaceId, dataset.id);
-
-      const updateDetails = {
-        /* Your update details here */
-      };
-      return await updateDatasource(
-        accessToken,
-        sourceWorkspaceId,
-        dataset.id,
-        updateDetails
-      );
-    })
-  );
-
-  return updatedDatasets;
-}
-
-/**
- * Perform CI/CD process by cloning all reports in parallel and updating data sources for all datasets.
- */
 async function performCICD() {
   try {
+    // 1. Generate an access token
     const accessToken = await fetchPowerBIAccessToken(
       clientId,
       clientSecret,
       tenantId
     );
 
-    if (!accessToken) {
-      console.error("Failed to fetch access token");
-      return;
+    // 2. Create a workspace if not exists using source workspace configuration and specified targetWorkspaceName
+    let workspaces = await getPowerBiWorkspaces(accessToken);
+    const sourceWorkspace = workspaces.find((w) => w.id === sourceWorkspaceId);
+    let targetWorkspace = workspaces.find((w) => w.id === targetWorkspaceId);
+
+    if (!targetWorkspace) {
+      targetWorkspace = await createWorkspace(
+        (accessToken = accessToken),
+        (isReadOnly = sourceWorkspace.isReadOnly),
+        (isOnDedicatedCapacity = sourceWorkspace.isOnDedicatedCapacity),
+        (capacityId = sourceWorkspace.capacityId),
+        (workspaceName = targetWorkspaceName)
+      );
     }
 
+    // 3. List all reports
     const reports = await listReports(accessToken, sourceWorkspaceId);
-    const datasets = await listDatasets(accessToken, sourceWorkspaceId);
 
-    if (!reports || !datasets) {
-      console.error("Failed to fetch reports or datasets");
-      return;
+    // 4. Loop through all reports and for each report in source workspace
+    for (const report of reports) {
+      // a. Export a pbix file
+      const pbixFile = await exportPowerBIReport(
+        (accessToken = accessToken),
+        (workspaceId = sourceWorkspaceId),
+        (reportId = report.id),
+        (outputFilePath = `./${report.name}.pbix`)
+      );
+
+      // b. Import pbix to target workspace with the same display name as the source
+      const importedReport = await importPbixToWorkspace(
+        (accessToken = accessToken),
+        (targetWorkspaceId = targetWorkspace.id),
+        (pbixFilePath = pbixFile),
+        (datasetDisplayName = report.name),
+        (nameConflict = nameConflict)
+      );
+
+      // c. Takeover new created data source
+      const dataset = await takeOverDataset(
+        (accessToken = accessToken),
+        (workspaceId = targetWorkspace.id),
+        (datasetId = importedReport.datasetId)
+      );
+
+      // d. Update dataset's datasource connection
+      const updatedDatasource = await updateDatasource(
+        (accessToken = accessToken),
+        (workspaceId = targetWorkspace.id),
+        (datasetId = importedReport.datasetId),
+        (updateDetails = targetDatasourceDetails)
+      );
     }
-
-    // Clone all reports in parallel, 10 at a time
-    const clonedReports = await cloneReportsInParallel(
-      accessToken,
-      reports.value
-    );
-    console.log("Cloned reports:", clonedReports);
-
-    // Update data sources for all datasets
-    const updatedDatasets = await takeOverAndUpdateDataSources(
-      accessToken,
-      datasets.value
-    );
-    console.log("Updated datasets:", updatedDatasets);
   } catch (error) {
-    console.error("Error performing CI/CD:", error);
+    console.error("Error: ", error);
   }
 }
 
 performCICD();
-
-
-// Todo: add following code to main block
-
-// (async () => {
-//   try {
-//     // Export the report from the source workspace
-//     console.log("Exporting report...");
-//     const exportedReportPath = `./${exportFileName}`;
-//     const exportResult = await powerBI.exportPowerBIReport(
-//       accessToken,
-//       sourceWorkspaceId,
-//       reportId,
-//       exportedReportPath
-//     );
-
-//     if (!exportResult) {
-//       console.error("Failed to export report.");
-//       return;
-//     }
-
-//     // Import the exported report to the target workspace
-//     console.log("Importing report to target workspace...");
-//     const importResult = await powerBI.importPbixToWorkspace(
-//       accessToken,
-//       targetWorkspaceId,
-//       exportedReportPath,
-//       datasetDisplayName,
-//       nameConflict
-//     );
-//     if (!importResult) {
-//       console.log("Failed to import report.");
-//       return;
-//     }
-    
-//     // Cleanup: Remove the exported report file
-//     fs.unlinkSync(exportedReportPath);
-//   } catch (error) {
-//     console.error("Error importing report:", error.response ? error.response.data : error);
-//     console.log("Failed to import report.");
-//   }
-// })();

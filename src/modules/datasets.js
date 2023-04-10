@@ -291,5 +291,9 @@ module.exports = {
   listDatasets,
   takeOverDataset,
   updateDatasource,
+  getRefreshSchedule,
+  refreshDataset,
+  updateRefreshSchedule,
+  deleteDataset,
   deleteAllDatasets,
 };
