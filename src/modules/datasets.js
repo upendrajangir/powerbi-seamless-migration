@@ -50,7 +50,6 @@ async function takeOverDataset(accessToken, workspaceId, datasetId) {
       Authorization: `Bearer ${accessToken}`,
     },
   };
-
   try {
     const response = await axios.request(config);
     return response.data;
@@ -83,19 +82,18 @@ async function updateDatasource(
   datasetId,
   updateDetails
 ) {
-  const data = JSON.stringify({ updateDetails });
+  const data = JSON.stringify(updateDetails);
 
   const config = {
     method: "post",
     maxBodyLength: Infinity,
-    url: `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/datasets/${datasetId}/Default.updateDatasource`,
+    url: `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/datasets/${datasetId}/Default.UpdateDatasources`,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
     data: data,
   };
-
   try {
     const response = await axios.request(config);
     return response.data;
@@ -154,8 +152,6 @@ async function refreshDataset(accessToken, workspaceId, datasetId) {
   }
 }
 
-const axios = require("axios");
-
 /**
  * Fetches the refresh schedule of a Power BI dataset in a workspace.
  * @param {string} accessToken - Access token for Power BI API.
@@ -190,8 +186,6 @@ async function getRefreshSchedule(accessToken, workspaceId, datasetId) {
     }
   }
 }
-
-const axios = require("axios");
 
 /**
  * Updates the refresh schedule of a Power BI dataset in a workspace.
@@ -237,8 +231,6 @@ async function updateRefreshSchedule(
 }
 
 // write a function to rename a powerbi dataset
-
-
 
 /**
  * Deletes a dataset from the specified workspace.

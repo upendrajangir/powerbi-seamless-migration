@@ -4,8 +4,6 @@ const { deleteAllReports } = require("./reports");
 const { deleteAllDatasets } = require("./datasets");
 const { access } = require("fs");
 
-const axios = require("axios");
-
 /**
  * Get Power BI groups using the provided access token.
  * @param {string} accessToken The access token to authenticate the API requests.
@@ -27,8 +25,8 @@ async function getPowerBiWorkspaces(accessToken) {
     const response = await axios.request(config);
 
     if (response.status === 200) {
-      console.log(JSON.stringify(response.data));
       console.log("Power BI groups fetched successfully");
+      return response.data.value;
     } else {
       console.error(
         `Error fetching Power BI groups: Unexpected status code ${response.status}`
@@ -93,8 +91,8 @@ async function createWorkspace(
     const response = await axios.request(config);
 
     if (response.status === 200) {
-      console.log(JSON.stringify(response.data));
       console.log(`Workspace '${workspaceName}' created successfully`);
+      return response.data;
     } else {
       console.error(
         `Error creating workspace '${workspaceName}': Unexpected status code ${response.status}`
@@ -142,7 +140,7 @@ async function getPowerBiCapacities(accessToken) {
     const response = await axios.request(config);
 
     if (response.status === 200) {
-      console.log(JSON.stringify(response.data));
+      response.data;
       console.log("Power BI capacities fetched successfully");
     } else {
       console.error(
@@ -192,10 +190,10 @@ async function addUserToPowerBiWorkspace(accessToken, userData) {
     const response = await axios.request(config);
 
     if (response.status === 200) {
-      console.log(JSON.stringify(response.data));
       console.log(
         `User '${userData.displayName}' added to the workspace successfully`
-      );
+        );
+        return response.data;
     } else {
       console.error(
         `Error adding user '${userData.displayName}' to the workspace: Unexpected status code ${response.status}`
@@ -252,7 +250,7 @@ async function assignWorkspaceToCapacity(accessToken, workspaceId, capacityId) {
     };
 
     const response = await axios.request(config);
-    console.log(JSON.stringify(response.data));
+    return response.data;
 
     console.log(
       `Workspace '${workspaceId}' assigned to capacity '${capacityId}' successfully`

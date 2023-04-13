@@ -1,10 +1,12 @@
 require("dotenv").config();
+const fs = require("fs");
 const { fetchPowerBIAccessToken } = require("./src/modules/powerbiAuth.js");
 const {
   getPowerBiWorkspaces,
   createWorkspace,
 } = require("./src/modules/workspaces.js");
 const {
+  getReport,
   listReports,
   exportPowerBIReport,
   importPbixToWorkspace,
@@ -24,16 +26,9 @@ const nameConflict = "CreateOrOverwrite";
 const targetDatasourceDetails = {
   updateDetails: [
     {
-      datasourceSelector: {
-        datasourceType: "Sql",
-        connectionDetails: {
-          server: "janvi1.database.windows.net",
-          database: "demo1",
-        },
-      },
       connectionDetails: {
-        server: "janvi1.database.windows.net",
-        database: "demo1",
+        server: process.env.TARGET_DATABASE_SERVER,
+        database: process.env.TARGET_DATABASE_NAME,
       },
     },
   ],
@@ -50,8 +45,16 @@ async function performCICD() {
 
     // 2. Create a workspace if not exists using source workspace configuration and specified targetWorkspaceName
     let workspaces = await getPowerBiWorkspaces(accessToken);
-    const sourceWorkspace = workspaces.find((w) => w.id === sourceWorkspaceId);
-    let targetWorkspace = workspaces.find((w) => w.id === targetWorkspaceId);
+
+    // const sourceWorkspace = workspaces.find((w) => w.id === sourceWorkspaceId);
+    // let targetWorkspace = workspaces.find((w) => w.id === targetWorkspaceId);
+
+    const sourceWorkspace = workspaces.filter(function (workspace) {
+      return workspace.id == sourceWorkspaceId;
+    })[0];
+    let targetWorkspace = workspaces.filter(function (workspace) {
+      return workspace.id == targetWorkspaceId;
+    })[0];
 
     if (!targetWorkspace) {
       targetWorkspace = await createWorkspace(
@@ -70,35 +73,44 @@ async function performCICD() {
     for (const report of reports) {
       // a. Export a pbix file
       const pbixFile = await exportPowerBIReport(
-        (accessToken = accessToken),
-        (workspaceId = sourceWorkspaceId),
-        (reportId = report.id),
-        (outputFilePath = `./${report.name}.pbix`)
+        accessToken,
+        sourceWorkspaceId,
+        report.id,
+        `./${report.name}.pbix`
       );
 
       // b. Import pbix to target workspace with the same display name as the source
       const importedReport = await importPbixToWorkspace(
-        (accessToken = accessToken),
-        (targetWorkspaceId = targetWorkspace.id),
-        (pbixFilePath = pbixFile),
-        (datasetDisplayName = report.name),
-        (nameConflict = nameConflict)
+        accessToken,
+        targetWorkspaceId,
+        pbixFile,
+        report.name,
+        nameConflict
       );
-
       // c. Takeover new created data source
-      const dataset = await takeOverDataset(
-        (accessToken = accessToken),
-        (workspaceId = targetWorkspace.id),
-        (datasetId = importedReport.datasetId)
+      let targetWorkspaceReports = await listReports(
+        accessToken,
+        targetWorkspaceId
       );
+      let importedReportData = targetWorkspaceReports.filter(function (entity) {
+        return entity.name == report.name;
+      })[0];
 
+      const dataset = await takeOverDataset(
+        accessToken,
+        targetWorkspaceId,
+        importedReportData.datasetId
+      );
       // d. Update dataset's datasource connection
       const updatedDatasource = await updateDatasource(
-        (accessToken = accessToken),
-        (workspaceId = targetWorkspace.id),
-        (datasetId = importedReport.datasetId),
-        (updateDetails = targetDatasourceDetails)
+        accessToken,
+        targetWorkspaceId,
+        importedReportData.datasetId,
+        targetDatasourceDetails
       );
+
+      // e. Delete the pbix file
+      fs.unlinkSync(pbixFile);
     }
   } catch (error) {
     console.error("Error: ", error);
