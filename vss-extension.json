@@ -1,0 +1,107 @@
+{
+  "manifestVersion": 1,
+  "id": "powerbi-seamless-migration",
+  "publisher": "coderspantry",
+  "version": "0.1.18",
+  "name": "Power BI Seamless Migration",
+  "description": "A sample Visual Studio Services extension",
+  "public": true,
+  "categories": ["Azure Pipelines"],
+  "baseUri": "https://localhost:44300",
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "icons": {
+    "default": "src/images/power-bi.png"
+  },
+  "screenshots": [
+    {
+      "path": "src/images/power-bi.png"
+    },
+    {
+      "path": "src/images/power-bi.png"
+    }
+  ],
+  "badges": [
+    {
+      "href": "https://github.com/upendrajangir/powerbi-seamless-migration/actions/workflows/build.yml",
+      "uri": "https://img.shields.io/github/actions/workflow/status/upendrajangir/powerbi-seamless-migration/build.yml",
+      "description": "GitHub Actions Build Status"
+    },
+    {
+      "href": "https://sonar.coderspantry.com/powerbi-seamless-migration",
+      "uri": "https://img.shields.io/sonar/coverage/some-component/master?server=http%3A%2F%2Fsonar.coderspantry.com&sonarVersion=4.2",
+      "description": "Sonar Code Coverage Status"
+    }
+  ],
+  "scopes": ["vso.build_execute", "vso.release_manage"],
+  "branding": {
+    "color": "rgb(34, 34, 34)",
+    "theme": "dark"
+  },
+  "content": {
+    "details": {
+      "path": "readme.md"
+    },
+    "license": {
+      "path": "eula.md"
+    }
+  },
+  "links": {
+    "home": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    },
+    "getstarted": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    },
+    "learn": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    },
+    "support": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    },
+    "repository": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    },
+    "issues": {
+      "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "uri": "https://github.com/upendrajangir/powerbi-seamless-migration"
+  },
+  "files": [
+    {
+      "path": "src/tasks/task0"
+    },
+    {
+      "path": "src/tasks/task1"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "task0",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "src/tasks/task0"
+      }
+    },
+    {
+      "id": "task1",
+      "type": "ms.vss-distributed-task.task",
+      "targets": ["ms.vss-distributed-task.tasks"],
+      "properties": {
+        "name": "src/tasks/task1"
+      }
+    }
+  ],
+  "CustomerQnASupport": {
+    "enablemarketplaceqna": true,
+    "url": "http://uservoice.visualstudio.com"
+  },
+  "tags": ["PowerBI", "CI/CD", "Migration"]
+}
