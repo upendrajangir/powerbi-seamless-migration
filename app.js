@@ -34,6 +34,34 @@ const targetDatasourceDetails = {
   ],
 };
 
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getImportedReportData(
+  accessToken,
+  targetWorkspaceId,
+  reportName
+) {
+  let importedReportData = null;
+
+  while (!importedReportData) {
+    let targetWorkspaceReports = await listReports(
+      accessToken,
+      targetWorkspaceId
+    );
+    importedReportData = targetWorkspaceReports.find(
+      (entity) => entity.name === reportName
+    );
+
+    if (!importedReportData) {
+      await sleep(1000); // Wait for 1 second before checking again
+    }
+  }
+
+  return importedReportData;
+}
+
 async function performCICD() {
   try {
     // 1. Generate an access token
@@ -88,13 +116,11 @@ async function performCICD() {
         nameConflict
       );
       // c. Takeover new created data source
-      let targetWorkspaceReports = await listReports(
+      let importedReportData = await getImportedReportData(
         accessToken,
-        targetWorkspaceId
+        targetWorkspaceId,
+        report.name
       );
-      let importedReportData = targetWorkspaceReports.filter(function (entity) {
-        return entity.name == report.name;
-      })[0];
 
       const dataset = await takeOverDataset(
         accessToken,
